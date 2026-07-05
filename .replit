@@ -37,3 +37,6 @@ externalPort = 80
 [deployment]
 deploymentTarget = "autoscale"
 run = ["php", "-S", "0.0.0.0:5000", "-t", "."]
+
+[objectStorage]
+defaultBucketID = "replit-objstore-53bfa973-f46b-4813-a4b5-8464146037a2"

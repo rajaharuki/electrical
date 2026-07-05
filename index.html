@@ -1512,6 +1512,11 @@ async function dbUpdate(key, id, patch) {
 }
 
 function getPhpBaseUrl() {
+  // For Replit deployment, use the public Replit URL
+  if (window.location.hostname.includes('replit') || window.location.hostname.includes('repl.co')) {
+    return 'https://electrical--rajamuliasrg13.replit.app/server';
+  }
+  // Fallback for local development
   const base = window.location.pathname.replace(/index\.html$/i, '').replace(/\/$/, '');
   return base ? `${base}/server` : '/server';
 }

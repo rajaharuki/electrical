@@ -1,0 +1,8 @@
+[build]
+build = ""
+
+[run]
+run = "php -S 0.0.0.0:8000"
+
+[nix]
+channel = "stable-23_05"

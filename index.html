@@ -995,7 +995,7 @@ footer{
       <input id="u-course" placeholder="cth: Fisika Dasar"></div>
     <div class="frow">
       <div class="fg"><label>Tanggal</label>
-        <input id="u-date" type="date" min="2025-07-16" max="2025-07-22"></div>
+        <input id="u-date" type="date" min="2026-07-16" max="2026-07-22"></div>
       <div class="fg"><label>Jam Mulai</label><input id="u-start" type="time"></div>
     </div>
     <div class="frow">
@@ -1442,14 +1442,13 @@ const STATE = {
 
 const COLORS = ['#00f5ff','#0066ff','#7b2fff','#ff2d78','#22c55e','#f59e0b','#ec4899','#14b8a6'];
 const DAYS   = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-const UAS_START = new Date('2025-07-16T00:00:00');
-const UAS_END   = new Date('2025-07-22T23:59:59');
+const UAS_LOCK  = new Date('2026-07-15T23:59:59'); // batas terakhir bisa edit
+const UAS_START = new Date('2026-07-16T00:00:00');
+const UAS_END   = new Date('2026-07-22T23:59:59');
 
 function getUASState() {
   const n = new Date();
-  if(n < UAS_START) return 'before';
-  if(n > UAS_END)   return 'after';
-  return 'during';
+  return n <= UAS_LOCK ? 'open' : 'locked';
 }
 
 /* ══════════════════════════════════════════════
@@ -1671,9 +1670,14 @@ function closeMob() {
    MODALS
 ══════════════════════════════════════════════ */
 function openModal(id) {
+  if(id==='modal-uas' && getUASState()!=='open') {
+    toast('Jadwal UAS sudah terkunci, gak bisa ditambah lagi.','error');
+    return;
+  }
   document.getElementById(id).classList.add('open');
   document.body.style.overflow='hidden';
 }
+
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
   document.body.style.overflow='';
@@ -1746,27 +1750,24 @@ function checkUASState() {
   const state = getUASState();
   const badge = document.getElementById('uas-badge');
   const tag   = document.getElementById('uas-soon-tag');
+  tag.style.display = 'none';
 
-  if(state==='before') {
-    badge.textContent = 'SOON';
-    badge.style.background = '#ff2d78';
-    // Show "UAS Bentar Lagi" tag if within 3 days
-    const diff = UAS_START - new Date();
+  if(state==='open') {
+    badge.textContent = 'OPEN';
+    badge.style.background = '#0066ff';
+    const diff = UAS_LOCK - new Date();
     if(diff < 86400000*3) tag.style.display='';
     startCountdown();
-  } else if(state==='during') {
-    badge.textContent = 'LIVE';
-    badge.style.background = '#22c55e';
   } else {
-    badge.textContent = 'SOON';
-    badge.style.background = '#0066ff';
+    badge.textContent = 'LOCKED';
+    badge.style.background = '#7b2fff';
   }
 }
 
 let cdInterval = null;
 function startCountdown() {
   function tick() {
-    const diff = UAS_START - new Date();
+    const diff = UAS_LOCK - new Date();
     if(diff<=0) { checkUASState(); renderUAS(); clearInterval(cdInterval); return; }
     const d=Math.floor(diff/86400000);
     const h=Math.floor((diff%86400000)/3600000);
@@ -1925,14 +1926,14 @@ function schedItemHTML(s) {
 /* ══════════════════════════════════════════════
    UAS
 ══════════════════════════════════════════════ */
-function addUAS() {
+  function addUAS() {
   const state = getUASState();
-  if(state==='after'){ toast('UAS sudah selesai, jadwal terkunci.','error'); return; }
+  if(state!=='open'){ toast('Jadwal UAS sudah dikunci, gak bisa ditambah lagi.','error'); return; }
   const course = document.getElementById('u-course').value.trim();
   const date   = document.getElementById('u-date').value;
   if(!course||!date){ toast('Lengkapi form dulu!','error'); return; }
   const d = new Date(date);
-  if(d<UAS_START||d>UAS_END){ toast('Tanggal harus 16–22 Juli 2025.','error'); return; }
+  if(d<UAS_START||d>UAS_END){ toast('Tanggal harus 16–22 Juli 2026.','error'); return; }
   dbPush('uas',{
     course, date,
     start: document.getElementById('u-start').value,
@@ -1948,7 +1949,7 @@ function addUAS() {
 }
 
 function deleteUAS(id) {
-  if(getUASState()==='after'){ toast('Jadwal terkunci.','error'); return; }
+  if(getUASState()!=='open'){ toast('Jadwal UAS sudah terkunci.','error'); return; }
   if(!confirm('Hapus jadwal UAS ini?')) return;
   dbRemove('uas',id);
   toast('Jadwal UAS dihapus.','error');
@@ -1959,56 +1960,45 @@ function renderUAS() {
   const content = document.getElementById('uas-content');
   const items   = getData('uas').sort((a,b)=>a.date.localeCompare(b.date)||a.start.localeCompare(b.start));
 
-  if(state==='before') {
+  if(state==='open') {
     content.innerHTML = `
-      <div class="gc" style="padding:1.5rem;margin-bottom:1.5rem;text-align:center">
-        <p style="color:var(--mt);font-size:.85rem;margin-bottom:.75rem">
-          <i class="fa-solid fa-clock" style="color:var(--c)"></i>
-          UAS dimulai <strong style="color:var(--c)">16 Juli 2025</strong>
+      <div class="gc" style="padding:1.1rem 1.3rem;margin-bottom:1.4rem;text-align:center">
+        <p style="color:var(--mt);font-size:.85rem;margin-bottom:.6rem">
+          <i class="fa-solid fa-pen" style="color:var(--c)"></i>
+          Jadwal UAS masih bisa ditambah/diubah sampai <strong style="color:var(--c)">15 Juli 2026</strong>.
+          Setelah itu jadwal <strong style="color:var(--pk)">terkunci total</strong>.
         </p>
         <div class="countdown-wrap" id="uas-countdown"></div>
       </div>
-      <div class="uas-locked">
-        <i class="fa-solid fa-lock ul-icon"></i>
-        <div class="ul-title">Jadwal UAS Terkunci</div>
-        <div class="ul-sub">Buka kembali 16 Juli 2025</div>
+      ${items.length===0
+        ? '<div class="empty-s"><i class="fa-solid fa-pen-to-square"></i>Belum ada jadwal UAS. Yuk tambahin!</div>'
+        : items.map(u=>uasCardHTML(u,true)).join('')}
+      <div style="text-align:center;margin-top:1.3rem">
+        <button class="btn-o" onclick="openModal('modal-uas')">
+          <i class="fa-solid fa-plus"></i> Tambah Jadwal UAS
+        </button>
       </div>`;
     startCountdown();
     return;
   }
 
-  if(state==='after') {
-    content.innerHTML = `
-      <div class="gc" style="padding:1.5rem;text-align:center;margin-bottom:1.5rem">
-        <div style="font-family:'Orbitron',monospace;font-size:1.3rem;color:var(--c)">‼️ UAS SEBENTAR LAGI</div>
-        <p style="color:var(--mt);font-size:.83rem;margin-top:.45rem">Jadwal terkunci per 05 Juli 2025.</p>
-      </div>
-      ${items.map(uasCardHTML).join('')}`;
-    return;
-  }
-
-  // During
+  // Locked — fully read-only, no add/edit/delete controls rendered at all
   content.innerHTML = `
-    <div class="gc" style="padding:.9rem 1.3rem;margin-bottom:1.4rem;text-align:center">
-      <span style="font-size:.85rem;color:var(--mt)">
-        <span class="online-dot"></span>UAS berlangsung · 16–22 Juli 2025
-      </span>
+    <div class="gc" style="padding:1.5rem;text-align:center;margin-bottom:1.5rem">
+      <i class="fa-solid fa-lock" style="font-size:1.6rem;color:var(--pk);display:block;margin-bottom:.6rem"></i>
+      <div style="font-family:'Orbitron',monospace;font-size:1.15rem;color:var(--pk)">JADWAL UAS TERKUNCI</div>
+      <p style="color:var(--mt);font-size:.82rem;margin-top:.45rem">Terkunci sejak 16 Juli 2026. Gak bisa diubah lagi.</p>
     </div>
     ${items.length===0
-      ? '<div class="empty-s"><i class="fa-solid fa-pen-to-square"></i>Belum ada jadwal UAS.</div>'
-      : items.map(u=>uasCardHTML(u,true)).join('')}
-    <div style="text-align:center;margin-top:1.3rem">
-      <button class="btn-o" onclick="openModal('modal-uas')">
-        <i class="fa-solid fa-plus"></i> Tambah Jadwal UAS
-      </button>
-    </div>`;
+      ? '<div class="empty-s"><i class="fa-solid fa-lock"></i>Belum ada jadwal UAS yang tersimpan.</div>'
+      : items.map(u=>uasCardHTML(u,false)).join('')}`;
 }
 
 function uasCardHTML(u, showDel=false) {
   const d     = new Date(u.date);
   const today = new Date().toDateString()===d.toDateString();
   return `
-    <div class="gc uas-card" style="${today?'border-color:rgba(0,245,255,.4)':''}">
+    <div class="gc uas-card" style="${today?'border-color:rgba(0,245,255,.4)':''}${showDel?'':';pointer-events:none'}">
       <div class="uas-date-box${today?' today':''}">
         <div class="uas-day">${d.getDate()}</div>
         <div class="uas-month">${d.toLocaleString('id',{month:'short'})}</div>

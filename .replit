@@ -1,53 +1,32 @@
-<<<<<<< HEAD
-[build]
-build = ""
-
-[run]
-run = "php -S 0.0.0.0:8000"
-
-[nix]
-channel = "stable-23_05"
-=======
 modules = ["web", "nodejs-20", "php-8.2"]
 [agent]
 expertMode = true
 stack = "BEST_EFFORT_FALLBACK"
-
 [nix]
 channel = "stable-25_05"
-
 [workflows]
 runButton = "Project"
-
 [[workflows.workflow]]
 name = "Project"
 mode = "parallel"
 author = "agent"
-
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Server"
-
 [[workflows.workflow]]
 name = "Server"
 author = "agent"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "php -S 0.0.0.0:5000 -t ."
 waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
-
 [[ports]]
 localPort = 5000
 externalPort = 80
-
 [deployment]
 deploymentTarget = "autoscale"
 run = ["php", "-S", "0.0.0.0:5000", "-t", "."]
-
 [objectStorage]
 defaultBucketID = "replit-objstore-53bfa973-f46b-4813-a4b5-8464146037a2"
->>>>>>> 44d86a8c1f934123d486c2bdb109d3f5405cc105
